@@ -35,7 +35,12 @@ const MARKERS = [
     z: -2050,
     desc: "myrmecia build"
   },
-
+            {
+    name: "Omega pyramid",
+    x: 6969,
+    z: 6969,
+    desc: "World record obsidian pyramid"
+  },
   // Add more markers below by copying the block above
   // {
   //   name: "My Base",
