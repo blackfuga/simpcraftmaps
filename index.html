@@ -65,6 +65,7 @@
     .marker-icon {
       font-size: 18px;
       line-height: 1;
+      text-align: center;
     }
   </style>
 </head>
@@ -90,11 +91,14 @@
 
   // ── CONFIG ───────────────────────────────────
   const TILE_URL   = "tiles/{z}/{x}/{y}.png";
-  const MIN_ZOOM   = -8;   // how far out you can zoom
-  const MAX_ZOOM   = 8;    // how far in you can zoom
-  const START_X    = 0;    // Minecraft X to start at
-  const START_Z    = 0;    // Minecraft Z to start at
-  const START_ZOOM = 2;    // zoom level on load (higher = more zoomed in)
+  const MIN_ZOOM   = -8;
+  const MAX_ZOOM   = 8;
+  const START_ZOOM = 2;
+
+  // Offset: the Leaflet coords where Minecraft 0,0 actually is
+  // (hover over true spawn in-game and note the displayed coords before fix)
+  const OFFSET_X = 127;
+  const OFFSET_Z = 127;
   // ─────────────────────────────────────────────
 
   const map = L.map("map", {
@@ -102,7 +106,7 @@
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
     zoomControl: true,
-  }).setView([-START_Z, START_X], START_ZOOM);
+  }).setView([-OFFSET_Z, OFFSET_X], START_ZOOM);
 
   L.tileLayer(TILE_URL, {
     tileSize: 256,
@@ -111,15 +115,15 @@
     errorTileUrl: "",
   }).addTo(map);
 
-  // Coords display
+  // Coords display — subtract offset so 0,0 is true spawn
   const coordsEl = document.getElementById("coords");
   map.on("mousemove", e => {
-    const x = Math.round(e.latlng.lng);
-    const z = Math.round(-e.latlng.lat);
+    const x = Math.round(e.latlng.lng - OFFSET_X);
+    const z = Math.round(-e.latlng.lat - OFFSET_Z);
     coordsEl.textContent = `X: ${x}  Z: ${z}`;
   });
 
-  // Jump to coords
+  // Jump to coords — add offset so it goes to the right tile position
   function goToCoords() {
     const val = document.getElementById("coord-input").value;
     const parts = val.split(",").map(s => s.trim());
@@ -127,7 +131,7 @@
       const x = parseFloat(parts[0]);
       const z = parseFloat(parts[1]);
       if (!isNaN(x) && !isNaN(z)) {
-        map.setView([-z, x], 4);
+        map.setView([-(z + OFFSET_Z), x + OFFSET_X], 4);
       }
     }
   }
@@ -135,7 +139,7 @@
     if (e.key === "Enter") goToCoords();
   });
 
-  // Load markers from markers.js
+  // Load markers from markers.js — also offset corrected
   if (typeof MARKERS !== "undefined") {
     MARKERS.forEach(m => {
       const icon = L.divIcon({
@@ -146,7 +150,7 @@
                </div>`,
         iconAnchor: [0, 0],
       });
-      L.marker([-m.z, m.x], { icon })
+      L.marker([-(m.z + OFFSET_Z), m.x + OFFSET_X], { icon })
         .addTo(map)
         .bindPopup(`<b>${m.name}</b><br>X: ${m.x} Z: ${m.z}${m.desc ? "<br>" + m.desc : ""}`);
     });
