@@ -9,6 +9,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #111; color: #eee; font-family: sans-serif; overflow: hidden; }
     #map { width: 100vw; height: 100vh; background: #1a1a1a; }
+
     #hud {
       position: absolute; top: 12px; left: 50%;
       transform: translateX(-50%); z-index: 1000;
@@ -19,6 +20,7 @@
     }
     #hud span { color: #888; }
     #hud b { color: #fff; }
+
     #coords {
       position: absolute; bottom: 10px; left: 10px;
       z-index: 1000; background: rgba(0,0,0,0.7);
@@ -26,6 +28,7 @@
       font-size: 12px; color: #ccc; pointer-events: none;
       font-family: monospace;
     }
+
     #search-box {
       position: absolute; top: 12px; right: 12px;
       z-index: 1000; display: flex; gap: 6px;
@@ -42,22 +45,45 @@
       font-size: 13px; cursor: pointer;
     }
     #search-box button:hover { background: #222; }
+
+    /* Marker toggle button */
+    #marker-toggle {
+      position: absolute; bottom: 10px; right: 12px;
+      z-index: 1000;
+    }
+    #marker-toggle button {
+      background: rgba(0,0,0,0.8); border: 1px solid #444;
+      color: #fff; padding: 6px 14px; border-radius: 6px;
+      font-size: 13px; cursor: pointer;
+    }
+    #marker-toggle button:hover { background: #222; }
+    #marker-toggle button.hidden-state { border-color: #666; color: #888; }
+
     .leaflet-control-zoom a {
       background: rgba(0,0,0,0.8) !important;
       color: #fff !important;
       border-color: #333 !important;
     }
+
     .custom-marker {
       background: rgba(0,0,0,0.85);
       border: 1px solid #555;
       border-radius: 4px;
-      padding: 3px 7px;
+      padding: 3px 8px;
       font-size: 11px;
       color: #fff;
       white-space: nowrap;
       pointer-events: none;
     }
-    .marker-icon { font-size: 18px; line-height: 1; text-align: center; }
+
+    /* Pin dot */
+    .marker-dot {
+      width: 8px; height: 8px;
+      background: #fff;
+      border: 2px solid #555;
+      border-radius: 50%;
+      margin: 0 auto 2px auto;
+    }
   </style>
 </head>
 <body>
@@ -66,11 +92,18 @@
   <div><span>Server </span><b>SimpCraft</b></div>
   <div><span>Dim </span><b>Overworld</b></div>
 </div>
+
 <div id="coords">X: 0  Z: 0</div>
+
 <div id="search-box">
   <input type="text" id="coord-input" placeholder="X, Z  (e.g. 100, -200)" />
   <button onclick="goToCoords()">Go</button>
 </div>
+
+<div id="marker-toggle">
+  <button id="toggle-btn" onclick="toggleMarkers()">Hide Markers</button>
+</div>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -82,10 +115,11 @@
   const MIN_ZOOM   = -8;
   const MAX_ZOOM   = 7;
   const START_ZOOM = 0;
-const OFFSET_X  = 126.8611;
-const OFFSET_Z  = 127.1428;
-const SCALE_X   = 39.0625;
-const SCALE_Z   = 39.0625;
+
+  const OFFSET_X  = 126.8611;
+  const OFFSET_Z  = 127.1428;
+  const SCALE_X   = 39.0625;
+  const SCALE_Z   = 39.0625;
   // ─────────────────────────────────────────────
 
   const map = L.map("map", {
@@ -134,20 +168,38 @@ const SCALE_Z   = 39.0625;
     if (e.key === "Enter") goToCoords();
   });
 
+  // Markers
+  const markerLayer = L.layerGroup().addTo(map);
+  let markersVisible = true;
+
   if (typeof MARKERS !== "undefined") {
     MARKERS.forEach(m => {
       const icon = L.divIcon({
         className: "",
-        html: `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                 <div class="marker-icon">${m.icon || "📍"}</div>
+        html: `<div style="display:flex;flex-direction:column;align-items:center;">
+                 <div class="marker-dot"></div>
                  <div class="custom-marker">${m.name}</div>
                </div>`,
         iconAnchor: [0, 0],
       });
       L.marker(toLeaflet(m.x, m.z), { icon })
-        .addTo(map)
+        .addTo(markerLayer)
         .bindPopup(`<b>${m.name}</b><br>X: ${m.x} Z: ${m.z}${m.desc ? "<br>" + m.desc : ""}`);
     });
+  }
+
+  function toggleMarkers() {
+    const btn = document.getElementById("toggle-btn");
+    if (markersVisible) {
+      map.removeLayer(markerLayer);
+      btn.textContent = "Show Markers";
+      btn.classList.add("hidden-state");
+    } else {
+      map.addLayer(markerLayer);
+      btn.textContent = "Hide Markers";
+      btn.classList.remove("hidden-state");
+    }
+    markersVisible = !markersVisible;
   }
 
 </script>
