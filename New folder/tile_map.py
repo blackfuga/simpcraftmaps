@@ -5,7 +5,7 @@ import os, math
 INPUT_IMAGE = "bigmap.png"   # your exported Xaero PNG (put it in the same folder as this script)
 OUTPUT_DIR  = "tiles"        # where tiles will be saved
 MIN_ZOOM    = 0
-MAX_ZOOM    = 7              # increase for more zoom levels (takes longer)
+MAX_ZOOM    = 9              # increase for more zoom levels (takes longer)
 TILE_SIZE   = 256
 # ────────────────────────────────────────────────
 

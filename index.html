@@ -80,14 +80,15 @@
   // ── CONFIG ───────────────────────────────────
   const TILE_URL   = "tiles/{z}/{x}/{y}.png";
   const MIN_ZOOM   = -8;
-  const MAX_ZOOM   = 7;
+  const MAX_ZOOM   = 7;   // must match MAX_ZOOM in tile_map.py
   const START_ZOOM = 0;
 
-  // These are calculated from your image size (9498x9677) and map size (10000x10000 blocks)
-  // Spawn is at the center of the image
-  const OFFSET_X  = 18.5508;   // leaflet units to spawn (center of image)
-  const OFFSET_Z  = 18.9004;
-  const SCALE_X   = 269.5304;  // minecraft blocks per leaflet unit
+  // Spawn position in leaflet units (center of image + fine tune offset)
+  const OFFSET_X  = 18.7216;
+  const OFFSET_Z  = 19.0252;
+
+  // Blocks per leaflet unit (calculated from 9498x9677 image = 10000x10000 blocks)
+  const SCALE_X   = 269.5304;
   const SCALE_Z   = 264.5448;
   // ─────────────────────────────────────────────
 
