@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Server Map</title>
+  <title>SimpCraft Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,7 +36,7 @@
     #search-box input {
       background: rgba(0,0,0,0.8); border: 1px solid #444;
       color: #fff; padding: 6px 10px; border-radius: 6px;
-      font-size: 13px; width: 180px; outline: none;
+      font-size: 13px; width: 200px; outline: none;
     }
     #search-box input::placeholder { color: #666; }
     #search-box button {
@@ -51,12 +51,27 @@
       color: #fff !important;
       border-color: #333 !important;
     }
+
+    .custom-marker {
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: 11px;
+      color: #fff;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .marker-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
   </style>
 </head>
 <body>
 
 <div id="hud">
-  <div><span>Server </span><b>My Anarchy Server</b></div>
+  <div><span>Server </span><b>SimpCraft</b></div>
   <div><span>Dim </span><b>Overworld</b></div>
 </div>
 
@@ -70,23 +85,24 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="markers.js"></script>
 <script>
 
-  // ── CONFIGURE HERE ──────────────────────────────
-  // Change "My Anarchy Server" in the HUD above too
+  // ── CONFIG ───────────────────────────────────
   const TILE_URL   = "tiles/{z}/{x}/{y}.png";
-  const MIN_ZOOM   = -5;
-  const MAX_ZOOM   = 5;
-  const START_POS  = [0, 0];
-  const START_ZOOM = 0;
-  // ────────────────────────────────────────────────
+  const MIN_ZOOM   = -8;   // how far out you can zoom
+  const MAX_ZOOM   = 8;    // how far in you can zoom
+  const START_X    = 0;    // Minecraft X to start at
+  const START_Z    = 0;    // Minecraft Z to start at
+  const START_ZOOM = 2;    // zoom level on load (higher = more zoomed in)
+  // ─────────────────────────────────────────────
 
   const map = L.map("map", {
     crs: L.CRS.Simple,
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
     zoomControl: true,
-  }).setView(START_POS, START_ZOOM);
+  }).setView([-START_Z, START_X], START_ZOOM);
 
   L.tileLayer(TILE_URL, {
     tileSize: 256,
@@ -111,7 +127,7 @@
       const x = parseFloat(parts[0]);
       const z = parseFloat(parts[1]);
       if (!isNaN(x) && !isNaN(z)) {
-        map.setView([-z, x], 2);
+        map.setView([-z, x], 4);
       }
     }
   }
@@ -119,8 +135,22 @@
     if (e.key === "Enter") goToCoords();
   });
 
-  // Uncomment to auto-refresh tiles every 5 min (for live maps):
-  // setInterval(() => tileLayer.redraw(), 5 * 60 * 1000);
+  // Load markers from markers.js
+  if (typeof MARKERS !== "undefined") {
+    MARKERS.forEach(m => {
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                 <div class="marker-icon">${m.icon || "📍"}</div>
+                 <div class="custom-marker">${m.name}</div>
+               </div>`,
+        iconAnchor: [0, 0],
+      });
+      L.marker([-m.z, m.x], { icon })
+        .addTo(map)
+        .bindPopup(`<b>${m.name}</b><br>X: ${m.x} Z: ${m.z}${m.desc ? "<br>" + m.desc : ""}`);
+    });
+  }
 
 </script>
 </body>
