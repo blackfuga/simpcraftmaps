@@ -9,7 +9,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #111; color: #eee; font-family: sans-serif; overflow: hidden; }
     #map { width: 100vw; height: 100vh; background: #1a1a1a; }
-
     #hud {
       position: absolute; top: 12px; left: 50%;
       transform: translateX(-50%); z-index: 1000;
@@ -20,7 +19,6 @@
     }
     #hud span { color: #888; }
     #hud b { color: #fff; }
-
     #coords {
       position: absolute; bottom: 10px; left: 10px;
       z-index: 1000; background: rgba(0,0,0,0.7);
@@ -28,7 +26,6 @@
       font-size: 12px; color: #ccc; pointer-events: none;
       font-family: monospace;
     }
-
     #search-box {
       position: absolute; top: 12px; right: 12px;
       z-index: 1000; display: flex; gap: 6px;
@@ -45,13 +42,11 @@
       font-size: 13px; cursor: pointer;
     }
     #search-box button:hover { background: #222; }
-
     .leaflet-control-zoom a {
       background: rgba(0,0,0,0.8) !important;
       color: #fff !important;
       border-color: #333 !important;
     }
-
     .custom-marker {
       background: rgba(0,0,0,0.85);
       border: 1px solid #555;
@@ -62,11 +57,7 @@
       white-space: nowrap;
       pointer-events: none;
     }
-    .marker-icon {
-      font-size: 18px;
-      line-height: 1;
-      text-align: center;
-    }
+    .marker-icon { font-size: 18px; line-height: 1; text-align: center; }
   </style>
 </head>
 <body>
@@ -75,14 +66,11 @@
   <div><span>Server </span><b>SimpCraft</b></div>
   <div><span>Dim </span><b>Overworld</b></div>
 </div>
-
 <div id="coords">X: 0  Z: 0</div>
-
 <div id="search-box">
   <input type="text" id="coord-input" placeholder="X, Z  (e.g. 100, -200)" />
   <button onclick="goToCoords()">Go</button>
 </div>
-
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -92,26 +80,15 @@
   // ── CONFIG ───────────────────────────────────
   const TILE_URL   = "tiles/{z}/{x}/{y}.png";
   const MIN_ZOOM   = -8;
-  const MAX_ZOOM   = 7;    // match however high you generated tiles to
-  const START_ZOOM = 2;
+  const MAX_ZOOM   = 7;
+  const START_ZOOM = 0;
 
-  // Pixel position in the image where Minecraft 0,0 (spawn) is
-  // At zoom 0 the whole map is 1 tile (256px), so divide pixel offset by image size * 256
-  const OFFSET_X = 4749;  // pixel X of spawn in original image / (imageWidth/256)
-  const OFFSET_Z = 4839;  // pixel Z of spawn in original image / (imageHeight/256)
-
-  // How many Minecraft blocks the full image represents
-  const MAP_BLOCKS_X = 10000;
-  const MAP_BLOCKS_Z = 10000;
-
-  // Image size in pixels (from when you ran the tiler)
-  const IMG_W = 9498;
-  const IMG_H = 9677;
-
-  // Scale: blocks per Leaflet unit at zoom 0
-  // At zoom 0, image is scaled to 256px, so 1 leaflet unit = IMG_W/256 pixels = MAP_BLOCKS_X/(IMG_W/256*256) blocks
-  const SCALE_X = MAP_BLOCKS_X / IMG_W;  // blocks per pixel
-  const SCALE_Z = MAP_BLOCKS_Z / IMG_H;
+  // These are calculated from your image size (9498x9677) and map size (10000x10000 blocks)
+  // Spawn is at the center of the image
+  const OFFSET_X  = 18.5508;   // leaflet units to spawn (center of image)
+  const OFFSET_Z  = 18.9004;
+  const SCALE_X   = 269.5304;  // minecraft blocks per leaflet unit
+  const SCALE_Z   = 264.5448;
   // ─────────────────────────────────────────────
 
   const map = L.map("map", {
@@ -119,7 +96,7 @@
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
     zoomControl: true,
-  }).setView([-OFFSET_Z / (IMG_H / 256), OFFSET_X / (IMG_W / 256)], START_ZOOM);
+  }).setView([-OFFSET_Z, OFFSET_X], START_ZOOM);
 
   L.tileLayer(TILE_URL, {
     tileSize: 256,
@@ -128,34 +105,23 @@
     errorTileUrl: "",
   }).addTo(map);
 
-  // Convert Leaflet latlng to Minecraft coords
   function toMinecraft(latlng) {
-    const leafletX = latlng.lng;
-    const leafletZ = -latlng.lat;
-    const pixelX = leafletX * (IMG_W / 256);
-    const pixelZ = leafletZ * (IMG_H / 256);
-    const mcX = Math.round((pixelX - OFFSET_X) * SCALE_X);
-    const mcZ = Math.round((pixelZ - OFFSET_Z) * SCALE_Z);
-    return { x: mcX, z: mcZ };
+    return {
+      x: Math.round((latlng.lng  - OFFSET_X) * SCALE_X),
+      z: Math.round((-latlng.lat - OFFSET_Z) * SCALE_Z)
+    };
   }
 
-  // Convert Minecraft coords to Leaflet latlng
   function toLeaflet(mcX, mcZ) {
-    const pixelX = mcX / SCALE_X + OFFSET_X;
-    const pixelZ = mcZ / SCALE_Z + OFFSET_Z;
-    const leafletX = pixelX / (IMG_W / 256);
-    const leafletZ = pixelZ / (IMG_H / 256);
-    return [-leafletZ, leafletX];
+    return [-(mcZ / SCALE_Z + OFFSET_Z), mcX / SCALE_X + OFFSET_X];
   }
 
-  // Coords display
   const coordsEl = document.getElementById("coords");
   map.on("mousemove", e => {
     const mc = toMinecraft(e.latlng);
     coordsEl.textContent = `X: ${mc.x}  Z: ${mc.z}`;
   });
 
-  // Jump to Minecraft coords
   function goToCoords() {
     const val = document.getElementById("coord-input").value;
     const parts = val.split(",").map(s => s.trim());
@@ -171,10 +137,8 @@
     if (e.key === "Enter") goToCoords();
   });
 
-  // Load markers from markers.js
   if (typeof MARKERS !== "undefined") {
     MARKERS.forEach(m => {
-      const pos = toLeaflet(m.x, m.z);
       const icon = L.divIcon({
         className: "",
         html: `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
@@ -183,7 +147,7 @@
                </div>`,
         iconAnchor: [0, 0],
       });
-      L.marker(pos, { icon })
+      L.marker(toLeaflet(m.x, m.z), { icon })
         .addTo(map)
         .bindPopup(`<b>${m.name}</b><br>X: ${m.x} Z: ${m.z}${m.desc ? "<br>" + m.desc : ""}`);
     });
